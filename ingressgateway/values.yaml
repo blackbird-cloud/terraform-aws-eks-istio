@@ -1,0 +1,4 @@
+domainName: "*.blackbird.cloud"
+urlSafeCertificateName: "star.blackbird.cloud"
+ingressGatewayName: "ingressgateway"
+createCertificate: true

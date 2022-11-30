@@ -1,0 +1,93 @@
+# Name allows overriding the release name. Generally this should not be set
+name: ""
+# revision declares which revision this gateway is a part of
+revision: ""
+
+replicaCount: 2
+
+rbac:
+  # If enabled, roles will be created to enable accessing certificates from Gateways. This is not needed
+  # when using http://gateway-api.org/.
+  enabled: true
+
+serviceAccount:
+  # If set, a service account will be created. Otherwise, the default is used
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set, the release name is used
+  name: ""
+
+podAnnotations:
+  prometheus.io/port: "15020"
+  prometheus.io/scrape: "true"
+  prometheus.io/path: "/stats/prometheus"
+  inject.istio.io/templates: "gateway"
+  sidecar.istio.io/inject: "true"
+  proxy.istio.io/config: '{"gatewayTopology" : { "numTrustedProxies": 2 } }'
+
+# Define the security context for the pod.
+# If unset, this will be automatically set to the minimum privileges required to bind to port 80 and 443.
+# On Kubernetes 1.22+, this only requires the `net.ipv4.ip_unprivileged_port_start` sysctl.
+securityContext: ~
+containerSecurityContext: ~
+
+service:
+  # Type of service. Set to "None" to disable the service entirely
+  type: LoadBalancer
+  ports:
+    - name: http2
+      port: 80
+      protocol: TCP
+      targetPort: 80
+    - name: https
+      port: 443
+      protocol: TCP
+      targetPort: 443
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: external
+    service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
+    service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: ip
+    # service.beta.kubernetes.io/aws-load-balancer-proxy-protocol: "*"
+    service.beta.kubernetes.io/aws-load-balancer-target-group-attributes: proxy_protocol_v2.enabled=false #,preserve_client_ip.enabled=true
+    service.beta.kubernetes.io/aws-load-balancer-attributes: "deletion_protection.enabled=true,access_logs.s3.enabled=true,access_logs.s3.bucket=${access_logs_s3_bucket},access_logs.s3.prefix=istio-ingress"
+    external-dns.alpha.kubernetes.io/hostname: "${hostnames}"
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 2000m
+    memory: 1024Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+
+# Pod environment variables
+env: {}
+
+# Labels to apply to all resources
+labels: {}
+
+# Annotations to apply to all resources
+annotations: {}
+
+nodeSelector:
+  Instance: "Stable-node"
+
+tolerations: []
+
+affinity: {}
+
+# If specified, the gateway will act as a network gateway for the given network.
+networkGateway: ""
+
+imagePullSecrets: []
+# global:
+#   hub: docker.io/istio
+#   tag: 1.13.2

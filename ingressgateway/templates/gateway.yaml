@@ -1,0 +1,36 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  labels:
+    release: {{ .Release.Name }}
+    app: istio-{{ .Values.ingressGatewayName }}
+    istio: {{ .Values.ingressGatewayName }}
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+  name: {{ .Release.Name }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  selector:
+    istio: {{ .Values.ingressGatewayName }}
+  servers:
+  - hosts:
+    - '{{ .Values.domainName }}'
+    port:
+      name: http
+      number: 80
+      protocol: HTTP2
+    tls:
+      httpsRedirect: true
+  - hosts:
+    - '{{ .Values.domainName }}'
+    port:
+      name: https-default
+      number: 443
+      protocol: HTTPS
+    tls:
+      credentialName: '{{ .Values.urlSafeCertificateName }}'
+      mode: SIMPLE
+      privateKey: sds
+      serverCertificate: sds
+      minProtocolVersion: TLSV1_2
